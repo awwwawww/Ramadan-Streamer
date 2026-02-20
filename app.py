@@ -2,16 +2,20 @@ import streamlit as st
 import requests
 from datetime import datetime, timedelta
 import re
+import urllib.parse  # تمت الإضافة عشان الـ QR Code
 
 # إعدادات الصفحة
 st.set_page_config(page_title="Amin Stream - Ramadan 2026", layout="wide")
 
-# تصميم واجهة المستخدم (CSS)
+# تصميم واجهة المستخدم (CSS) مع تظبيط الألوان
 st.markdown("""
     <style>
-    .main { background-color: #0e1117; }
-    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #1b5e20; color: white; }
-    .video-card { border: 1px solid #333; padding: 15px; border-radius: 10px; margin-bottom: 10px; background-color: #161b22; }
+    .main { background-color: #0e1117; color: #ffffff; }
+    h1, h2, h3, h4 { color: #ffffff !important; }
+    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #00ff88; color: #000000; font-weight: bold; }
+    .video-card { border: 1px solid #00ff88; padding: 15px; border-radius: 10px; margin-bottom: 10px; background-color: #161b22; border-right: 4px solid #00ff88; }
+    .vid-title { color: #00ff88; font-size: 22px; font-weight: bold; margin-bottom: 5px; }
+    .vid-date { color: #aaaaaa; font-size: 14px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -68,6 +72,10 @@ def get_direct_link(identifier):
     except:
         return None
 
+# دالة توليد كود البث للشاشة (DLNA)
+def generate_qr(link):
+    return f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={urllib.parse.quote(link)}"
+
 # تنفيذ البحث والعرض
 if search_btn:
     if stop_btn:
@@ -88,18 +96,24 @@ if search_btn:
                     
                     if video_url:
                         with st.container():
+                            # الكارت مع الألوان الجديدة
                             st.markdown(f"""<div class="video-card">
-                                <h4>📺 {clean_title}</h4>
-                                <p style='color: gray;'>تاريخ الرفع: {item.get('addeddate', '')[:10]}</p>
+                                <div class="vid-title">📺 {clean_title}</div>
+                                <div class="vid-date">تاريخ الرفع: {item.get('addeddate', '')[:10]}</div>
                             </div>""", unsafe_allow_html=True)
                             
                             # مشغل الفيديو المباشر
                             st.video(video_url)
                             
-                            # روابط إضافية
-                            c1, c2 = st.columns([1, 5])
+                            # روابط إضافية وخاصية الـ DLNA
+                            c1, c2 = st.columns([1, 1])
                             with c1:
-                                st.download_button("📥 تحميل", data="", file_name=f"{clean_title}.mp4", help="اضغط يمين وحفظ باسم على رابط الفيديو")
+                                st.download_button("📥 تحميل", data="", file_name=f"{clean_title}.mp4", help="اضغط يمين وحفظ باسم على المشغل")
+                            with c2:
+                                with st.expander("📱 بث للشاشة (DLNA / QR)"):
+                                    st.image(generate_qr(video_url), width=150)
+                                    st.caption("امسح الكود بالموبايل للتشغيل على الشاشة الذكية")
+                            
                             st.divider()
 
 # تعليمات التشغيل لـ Streamlit
